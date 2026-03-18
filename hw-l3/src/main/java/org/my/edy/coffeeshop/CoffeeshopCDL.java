@@ -24,19 +24,7 @@ public class CoffeeshopCDL {
     private static boolean open = true; // кофейня открыта
 
     static void main(String[] args) throws InterruptedException {
-        AtomicInteger count = new AtomicInteger(3);
-
-        Thread closeCoffeeShop = new Thread(() -> {
-            while (true) {
-                if (count.get() == 0) {
-                    synchronized (lock) {
-                        open = false;
-                        lock.notify();
-                    }
-                    break;
-                }
-            }
-        });
+        CountDownLatch latch = new CountDownLatch(3);
 
         // Бариста
         Thread barista = new Thread(() -> {
@@ -58,7 +46,7 @@ public class CoffeeshopCDL {
                         System.out.println("Бариста готовит: " + order);
                         try {
                             lock.wait(1000);
-                            count.decrementAndGet();
+                            latch.countDown();
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e);
                         }
@@ -82,7 +70,6 @@ public class CoffeeshopCDL {
             });
         }
 
-        closeCoffeeShop.start();
         barista.start();
         Thread.sleep(200); // даём баристе успеть запуститься
 
@@ -100,8 +87,13 @@ public class CoffeeshopCDL {
             lock.notify();
         }
 
+        latch.await();
+        synchronized (lock) {
+            open = false;
+            lock.notify();
+        }
+
         // TODO: закрой кофейню и разбуди баристу чтобы он завершил работу
         barista.join();
-        closeCoffeeShop.join();
     }
 }
