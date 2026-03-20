@@ -16,7 +16,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 
-public class CoffeeshopCDL {
+public class CoffeeshopCDLZweiBaristas {
 
     private static final Queue<String> orders = new LinkedList<>();
     private static final Object lock = new Object();
@@ -38,40 +38,43 @@ public class CoffeeshopCDL {
             }
         });
 
-//         Бариста
-        Thread barista = new Thread(() -> {
-            synchronized (lock) {
-                while (open || !orders.isEmpty()) {
-                    if (orders.isEmpty()) {
-                        try {
-                            System.out.println("Бариста ждёт заказов...");
-                            // TODO: бариста засыпает пока нет заказов
-                            lock.wait();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    } else {
-                        String order = orders.poll();
-                        // TODO: бариста готовит кофе 1 секунду
-                        // не забудь отпустить lock пока готовит!
-
-                        System.out.println("Бариста готовит: " + order);
-                        try {
-                            lock.wait(1000);
-                            latch.countDown();
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-            }
-            System.out.println("Бариста: все заказы выполнены!");
-        });
-
         // Клиенты
         String[] coffees = {"Латте", "Капучино", "Эспрессо"};
         Thread[] clients = new Thread[coffees.length];
+        Thread[] baristas = new Thread[2];
 
+        for (int i = 0; i < baristas.length; i++) {
+            String name = "Бариста-" + (i + 1);
+            baristas[i] = new Thread(() -> {
+                synchronized (lock) {
+                    while (open || !orders.isEmpty()) {
+                        if (orders.isEmpty()) {
+                            try {
+                                System.out.println(name + " ждёт заказов...");
+                                // TODO: бариста засыпает пока нет заказов
+                                lock.wait();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            String order = orders.poll();
+                            // TODO: бариста готовит кофе 1 секунду
+                            // не забудь отпустить lock пока готовит!
+                            lock.notifyAll();
+
+                            System.out.println(name + " готовит: " + order);
+                            try {
+                                lock.wait(1000);
+                                latch.countDown();
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    }
+                }
+                System.out.println(name + ": все заказы выполнены!");
+            });
+        }
 
         for (int i = 0; i < coffees.length; i++) {
             String coffee = coffees[i];
@@ -86,8 +89,9 @@ public class CoffeeshopCDL {
         }
 
         closeCoffeeShop.start();
-        barista.start();
-
+        for (Thread barista : baristas) {
+            barista.start();
+        }
         Thread.sleep(200); // даём баристе успеть запуститься
 
         for (Thread client : clients) {
@@ -106,6 +110,8 @@ public class CoffeeshopCDL {
 
         // TODO: закрой кофейню и разбуди баристу чтобы он завершил работу
         closeCoffeeShop.join();
-        barista.join();
+        for (Thread barista : baristas) {
+            barista.join();
+        }
     }
 }
