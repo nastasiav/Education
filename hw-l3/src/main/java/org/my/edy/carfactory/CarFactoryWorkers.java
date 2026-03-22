@@ -36,14 +36,11 @@ package org.my.edy.carfactory;
 
 */
 
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 public class CarFactoryWorkers {
 
-    static void main(String[] args) throws InterruptedException {
+    static void main(String[] args) throws InterruptedException, RuntimeException {
         CountDownLatch latch = new CountDownLatch(3);
 
         System.out.println("Начало сборки автомобиля...");
@@ -52,18 +49,18 @@ public class CarFactoryWorkers {
         // Этап 1 — параллельные задачи
 
         // Этап 2 — покраска и установка
-        Thread paintAndInstall = new Thread(() -> {
+        Runnable paintAndInstall =() -> {
             System.out.println("▶ Красим кузов и устанавливаем детали...");
             sleep(2000);
             System.out.println("✔ Покраска и установка завершены");
-        });
+        };
 
         // Этап 3 — финальная проверка
-        Thread finalCheck = new Thread(() -> {
+        Runnable finalCheck = () -> {
             System.out.println("▶ Финальная проверка...");
             sleep(1000);
             System.out.println("✔ Автомобиль готов к продаже!");
-        });
+        };
 
         // TODO
         ExecutorService pool = Executors.newFixedThreadPool(3);
@@ -73,11 +70,18 @@ public class CarFactoryWorkers {
 
         latch.await();
 
-        paintAndInstall.start();
-        paintAndInstall.join();
+        try {
+            pool.submit(paintAndInstall).get(3000, TimeUnit.MILLISECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
 
-        finalCheck.start();
-        finalCheck.join();
+        try {
+            pool.submit(finalCheck).get(3000, TimeUnit.MILLISECONDS);
+        } catch (ExecutionException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+
 
         pool.shutdown();
 
