@@ -10,6 +10,7 @@ import java.util.concurrent.CountDownLatch;
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
+//not in use
 public class Worker implements Runnable {
     String name;
     String begin;

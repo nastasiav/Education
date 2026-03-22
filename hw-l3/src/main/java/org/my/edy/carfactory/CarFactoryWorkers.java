@@ -36,20 +36,41 @@ package org.my.edy.carfactory;
 
 */
 
+
 import java.util.concurrent.*;
 
 public class CarFactoryWorkers {
 
-    static void main(String[] args) throws InterruptedException, RuntimeException {
+    static void main(String[] args) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(3);
 
         System.out.println("Начало сборки автомобиля...");
         long start = System.currentTimeMillis();
 
         // Этап 1 — параллельные задачи
+        Runnable weldBody = () -> {
+            System.out.println("▶ Свариваем кузов...");
+            sleep(2000);
+            System.out.println("✔ Кузов готов");
+            latch.countDown();
+        };
+
+        Runnable buildEngine = () -> {
+            System.out.println("▶ Собираем двигатель...");
+            sleep(3000);
+            System.out.println("✔ Двигатель готов");
+            latch.countDown();
+        };
+
+        Runnable makeWheels = () -> {
+            System.out.println("▶ Делаем колёса...");
+            sleep(1000);
+            System.out.println("✔ Колёса готовы");
+            latch.countDown();
+        };
 
         // Этап 2 — покраска и установка
-        Runnable paintAndInstall =() -> {
+        Runnable paintAndInstall = () -> {
             System.out.println("▶ Красим кузов и устанавливаем детали...");
             sleep(2000);
             System.out.println("✔ Покраска и установка завершены");
@@ -64,9 +85,9 @@ public class CarFactoryWorkers {
 
         // TODO
         ExecutorService pool = Executors.newFixedThreadPool(3);
-        pool.submit(new Worker(1, "▶ Свариваем кузов...", "✔ Кузов готов", 2000, latch));
-        pool.submit(new Worker(2, "▶ Собираем двигатель...", "✔ Двигатель готов", 3000, latch));
-        pool.submit(new Worker(3, "▶ Делаем колёса...", "✔ Колёса готовы", 1000, latch));
+        pool.submit(weldBody);
+        pool.submit(buildEngine);
+        pool.submit(makeWheels);
 
         latch.await();
 
