@@ -41,8 +41,11 @@ import java.util.concurrent.*;
 
 public class CarFactoryWorkers {
 
+    private static volatile Car car;
+
     static void main(String[] args) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(3);
+        car = new Car();
 
         System.out.println("Начало сборки автомобиля...");
         long start = System.currentTimeMillis();
@@ -50,6 +53,7 @@ public class CarFactoryWorkers {
         // Этап 1 — параллельные задачи
         Runnable weldBody = () -> {
             System.out.println("▶ Свариваем кузов...");
+            car.setBody(true);
             sleep(2000);
             System.out.println("✔ Кузов готов");
             latch.countDown();
@@ -57,6 +61,7 @@ public class CarFactoryWorkers {
 
         Runnable buildEngine = () -> {
             System.out.println("▶ Собираем двигатель...");
+            car.setEngine(true);
             sleep(3000);
             System.out.println("✔ Двигатель готов");
             latch.countDown();
@@ -64,6 +69,7 @@ public class CarFactoryWorkers {
 
         Runnable makeWheels = () -> {
             System.out.println("▶ Делаем колёса...");
+            car.setWheels(true);
             sleep(1000);
             System.out.println("✔ Колёса готовы");
             latch.countDown();
@@ -72,14 +78,20 @@ public class CarFactoryWorkers {
         // Этап 2 — покраска и установка
         Runnable paintAndInstall = () -> {
             System.out.println("▶ Красим кузов и устанавливаем детали...");
-            sleep(2000);
+            if (car.paintAndInstall())
+                sleep(2000);
+            else
+                throw new RuntimeException("Ошибка 2 этапа");
             System.out.println("✔ Покраска и установка завершены");
         };
 
         // Этап 3 — финальная проверка
         Runnable finalCheck = () -> {
             System.out.println("▶ Финальная проверка...");
-            sleep(1000);
+            if (car.finalCheck())
+                sleep(1000);
+            else
+                throw new RuntimeException("Ошибка 3 этапа");
             System.out.println("✔ Автомобиль готов к продаже!");
         };
 
@@ -109,6 +121,7 @@ public class CarFactoryWorkers {
 
         long time = (System.currentTimeMillis() - start) / 1000;
         System.out.println("Сборка заняла: " + time + " секунд");
+        System.out.println(car);
     }
 
     static void sleep(int ms) {
