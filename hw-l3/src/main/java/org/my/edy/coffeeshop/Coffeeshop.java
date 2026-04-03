@@ -1,0 +1,94 @@
+package org.my.edy.coffeeshop;
+/*
+
+Бариста ждёт заказов...
+Клиент-1 добавил заказ: Латте
+Клиент-2 добавил заказ: Капучино
+Клиент-3 добавил заказ: Эспрессо
+Бариста готовит: Латте
+Бариста готовит: Капучино
+Бариста готовит: Эспрессо
+Бариста: все заказы выполнены!
+
+*/
+
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class Coffeeshop {
+
+    private static final Queue<String> orders = new LinkedList<>();
+    private static final Object lock = new Object();
+    private static boolean open = true; // кофейня открыта
+    private static AtomicInteger counter = new AtomicInteger(3);
+
+    static void main(String[] args) throws InterruptedException {
+
+        // Бариста
+        Thread barista = new Thread(() -> {
+            synchronized (lock) {
+                while ((open || !orders.isEmpty()) && counter.get() != 0) {
+                    if (orders.isEmpty()) {
+                        try {
+                            System.out.println("Бариста ждёт заказов...");
+                            // TODO: бариста засыпает пока нет заказов
+                            lock.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        String order = orders.poll();
+                        // TODO: бариста готовит кофе 1 секунду
+                        // не забудь отпустить lock пока готовит!
+                        // Thread.sleep(1000);
+
+                        System.out.println("Бариста готовит: " + order);
+                        try {
+                            lock.wait(1000);
+                            counter.decrementAndGet();
+//                            System.out.println(counter);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            }
+            System.out.println("Бариста: все заказы выполнены!");
+        });
+
+        // Клиенты
+        String[] coffees = {"Латте", "Капучино", "Эспрессо"};
+        Thread[] clients = new Thread[coffees.length];
+
+        for (int i = 0; i < coffees.length; i++) {
+            String coffee = coffees[i];
+            String name = "Клиент-" + (i + 1);
+            clients[i] = new Thread(() -> {
+                // TODO: добавь заказ в очередь и разбуди баристу
+                orders.add(coffee);
+                System.out.println(name + " добавил заказ: " + coffee);
+            });
+        }
+
+        barista.start();
+        Thread.sleep(200); // даём баристе успеть запуститься
+
+        for (Thread client : clients) {
+            client.start();
+            Thread.sleep(100); // клиенты приходят с небольшой паузой
+        }
+
+        // Ждём пока все клиенты добавят заказы
+        for (Thread client : clients) {
+            client.join();
+        }
+
+        synchronized (lock) {
+            lock.notify();
+        }
+
+        // TODO: закрой кофейню и разбуди баристу чтобы он завершил работу
+        barista.join();
+    }
+}

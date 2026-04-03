@@ -12,6 +12,7 @@
         <module>hw-l1</module>
         <module>task-l1</module>
         <module>task-l2</module>
+        <module>hw-l3</module>
     </modules>
 
     <properties>
@@ -21,10 +22,18 @@
     </properties>
 
     <dependencies>
+        <!-- Source: https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.44</version>
+            <scope>compile</scope>
+        </dependency>
         <!-- Source: https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <version>6.1.0-M1</version>
             <version>6.0.3</version>
             <scope>test</scope>
         </dependency>
