@@ -10,6 +10,19 @@ public class Task2 {
         exampleComparator();
         exampleComparator2();
 
+        exampleComparable();
+    }
+
+    private static void exampleComparable() {
+        Map<MyComparableObject, Integer> map = new TreeMap<>();
+
+        StringBuilder key = new StringBuilder();
+        for (int i = 0; i < 10; i++) {
+            key.append(i);
+            map.put(new MyComparableObject(key.toString()), i);
+        }
+
+        IO.println(map);
     }
 
     private static void exampleComparator() {
