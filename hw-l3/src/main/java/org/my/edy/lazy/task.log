@@ -1,0 +1,68 @@
+public class StopThread {
+
+    // Запусти сначала БЕЗ volatile
+    // Поток worker читает значение running из своего локального кеша (регистра процессора)
+    // Главный поток меняет running = false в своей памяти
+    // Но worker никогда не увидит это изменение — он смотрит только в свой кеш
+    // Программа зависнет навсегда
+    //
+    // Затем добавь volatile перед boolean
+    // volatile гарантирует что запись running = false happens-before чтения running в worker
+    // Теперь worker гарантированно увидит изменение и остановится
+    private static boolean running = true;
+
+    public static void main(String[] args) throws InterruptedException {
+
+        Thread worker = new Thread(() -> {
+            int count = 0;
+            while (running) {
+                count++;
+            }
+            System.out.println("Поток остановился. Итераций: " + count);
+        });
+
+        worker.start();
+        Thread.sleep(100);
+
+
+        running = false;
+        System.out.println("Флаг выключен");
+
+        worker.join();
+    }
+}
+
+
+
+public class LazyInit {
+
+    private static String database = null;
+
+    // Запусти сначала БЕЗ synchronized
+    // Три потока одновременно проверяют database == null
+    // Все три видят null и все три заходят внутрь if
+    // Подключение создаётся три раза — это гонка данных
+    //
+    // Затем добавь synchronized к методу
+    // Выход из synchronized в Поток-1 happens-before входа в synchronized в Поток-2
+    // Поток-2 войдёт внутрь только после Поток-1 и уже увидит database != null
+    // Подключение создастся ровно один раз
+    public static String getDatabase() {
+        if (database == null) {
+            try { Thread.sleep(100); } catch (InterruptedException e) {}
+            database = "Подключение создано потоком: " + Thread.currentThread().getName();
+            System.out.println(">>> Создаём подключение: " + database);
+        }
+        return database;
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+
+        Thread t1 = new Thread(() -> System.out.println(getDatabase()), "Поток-1");
+        Thread t2 = new Thread(() -> System.out.println(getDatabase()), "Поток-2");
+        Thread t3 = new Thread(() -> System.out.println(getDatabase()), "Поток-3");
+
+        t1.start(); t2.start(); t3.start();
+        t1.join();  t2.join();  t3.join();
+    }
+}

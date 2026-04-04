@@ -1,0 +1,167 @@
+import java.util.concurrent.*;
+import java.util.List;
+import java.util.ArrayList;
+
+// ============================================================
+// ЗАДАЧА — Сервер обработки запросов
+// ============================================================
+// Представь что ты пишешь бэкенд.
+// Приходит 10 000 запросов, каждый обращается к базе данных.
+// Нужно сравнить как справляются обычные и виртуальные потоки.
+//
+// Виртуальные потоки появились в Java 21.
+// В отличие от обычных они не привязаны к потокам ОС —
+// JVM управляет ими сама. Можно создать миллион виртуальных
+// потоков без проблем.
+//
+// Каждый запрос:
+// 1. Имитирует запрос к БД через Thread.sleep(50ms)
+// 2. Возвращает строку с номером запроса и именем потока
+//
+// Реализуй два метода:
+// processWithPlatformThreads() — обычный FixedThreadPool
+// processWithVirtualThreads()  — пул виртуальных потоков
+//
+// Почему такая разница в результатах:
+//
+// Обычные потоки (200 штук):
+// 10_000 запросов / 200 потоков = 50 волн
+// 50 волн × 50ms = 2500ms
+//
+// Виртуальные потоки:
+// Создаётся 10_000 виртуальных потоков
+// Все стартуют почти одновременно
+// Итог ≈ 50ms + накладные расходы
+//
+// Виртуальные потоки выигрывают когда задачи ЖДУТ (I/O, БД, сеть)
+// Попробуй заменить Thread.sleep на реальные вычисления — разница исчезнет
+//
+// Ожидаемый вывод:
+// Запросов: 10000
+// Задержка на запрос: 50ms
+// ========================================
+// Прогрев JVM...
+// Прогрев завершён
+// ========================================
+// Обычные потоки:     2600 ms
+// Виртуальные потоки: 80 ms
+// ========================================
+// Виртуальные быстрее в: 32.5x
+// ============================================================
+
+public class ServerBenchmark {
+
+    private static final int REQUESTS = 10_000;
+
+    // Имитация запроса к базе данных
+    static String handleRequest(int requestId) throws InterruptedException {
+        Thread.sleep(50);
+        return "Ответ #" + requestId + " от: " + Thread.currentThread().getName();
+    }
+
+    // TODO: реализуй через Executors.newFixedThreadPool(200)
+    // отправь REQUESTS задач в пул, собери результаты через Future
+    // замерь время через System.currentTimeMillis()
+    // верни количество миллисекунд которое заняла обработка
+    static long processWithPlatformThreads() throws InterruptedException, ExecutionException {
+        return 0;
+    }
+
+    // TODO: реализуй через Executors.newVirtualThreadPerTaskExecutor()
+    // логика та же что и в processWithPlatformThreads()
+    // единственное отличие — тип пула
+    static long processWithVirtualThreads() throws InterruptedException, ExecutionException {
+        return 0;
+    }
+
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
+
+        System.out.println("Запросов: " + REQUESTS);
+        System.out.println("Задержка на запрос: 50ms");
+        System.out.println("=".repeat(40));
+
+        // Прогрев JVM — первый запуск всегда медленнее
+        // JVM оптимизирует код во время выполнения (JIT компиляция)
+        // поэтому прогреваем перед реальным замером
+        System.out.println("Прогрев JVM...");
+        processWithPlatformThreads();
+        processWithVirtualThreads();
+        System.out.println("Прогрев завершён");
+        System.out.println("=".repeat(40));
+
+        long platformTime = processWithPlatformThreads();
+        System.out.println("Обычные потоки:     " + platformTime + " ms");
+
+        long virtualTime = processWithVirtualThreads();
+        System.out.println("Виртуальные потоки: " + virtualTime + " ms");
+
+        System.out.println("=".repeat(40));
+        System.out.printf("Виртуальные быстрее в: %.1fx%n", (double) platformTime / virtualTime);
+    }
+}
+
+
+
+
+//===========================
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+// ============================================================
+// ТЕСТЫ НА БЕНЧМАРК
+// ============================================================
+// Проверяем что оба метода работают корректно и быстро.
+//
+// Последовательное время = 10_000 запросов × 50ms = 500_000ms
+// Оба метода должны быть значительно быстрее этого значения.
+//
+// Для тестов на имена потоков нужно изменить handleRequest()
+// чтобы он возвращал имя потока в строке результата.
+// Обычные потоки содержат "pool-" в имени.
+// Виртуальные потоки содержат "virtual" в имени.
+// ============================================================
+
+public class ServerBenchmarkTest {
+
+    private static final long SEQUENTIAL_TIME = 10_000L * 50;
+
+    // TODO: проверь что обычные потоки быстрее последовательного выполнения
+    // подсказка: SEQUENTIAL_TIME = 10_000 * 50ms = 500_000ms
+    @Test
+    void platformThreadsShouldBeFasterThanSequential() {
+
+    }
+
+    // TODO: проверь что виртуальные потоки быстрее последовательного выполнения
+    @Test
+    void virtualThreadsShouldBeFasterThanSequential() {
+
+    }
+
+    // TODO: проверь что виртуальные потоки быстрее обычных минимум в 2 раза
+    // подсказка: virtualTime * 2 < platformTime
+    @Test
+    void virtualThreadsShouldBeFasterThanPlatform() {
+
+    }
+
+    // TODO: измени методы чтобы возвращали List<String> с результатами
+    // проверь что размер списка равен 10_000
+    @Test
+    void allRequestsShouldBeProcessed() {
+
+    }
+
+    // TODO: проверь что результаты обычных потоков содержат "pool-" в имени
+    @Test
+    void platformThreadsShouldHaveCorrectThreadNames() {
+
+    }
+
+    // TODO: проверь что результаты виртуальных потоков содержат "virtual" в имени
+    @Test
+    void virtualThreadsShouldHaveCorrectThreadNames() {
+
+    }
+}
