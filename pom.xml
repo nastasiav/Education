@@ -14,6 +14,7 @@
         <module>task-l2</module>
         <module>hw-l3</module>
         <module>task-l4</module>
+        <module>hw-4</module>
     </modules>
 
     <properties>
